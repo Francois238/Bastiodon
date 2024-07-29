@@ -1,9 +1,3 @@
-# MITRE Caldera Plugin: Bastiodon
+# Bastiodon
 
-Bastiodon is a Caldera plugin template
-
-Run the `plugin-init.py` script to easily create a new plugin
-
-```
-python plugin-init.py 
-```
+Launch attack and wait for an alert from QRadar corresponding to this alert
