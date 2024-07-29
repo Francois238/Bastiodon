@@ -1,0 +1,299 @@
+<link rel="stylesheet" href="/bastiodon/css/bastiodon.css">
+<script src="/bastiodon/js/bastiodon.js"></script>
+
+<div x-data="alpineBastiodon()" x-init="initPage()">
+    <div>
+        <h2 x-text="name"></h2>
+        <p x-text="description"></p>
+    </div>
+    <hr>
+    <div>
+        <button class="button is-primary is-small" @click="showAddAssociationModal = true">Add association</button>
+        <button class="button is-primary is-small" @click="startVerification">Start verification</button>
+        <button class="button is-primary is-small" @click="showRulesVerifiedModal = true; refreshRulesVerified()">Show rules verified</button>
+    </div>
+
+    <!-- Add association modal -->
+    <div class="modal" :class="{ 'is-active': showAddAssociationModal}">
+        <div class="modal-background" @click="showAddAssociationModal = false"></div>
+        <div class="modal-card wide">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Add association</p>
+            </header>
+            <section class="modal-card-body">
+
+                
+                <!-- Add association modal caldera ability selector -->
+                <div class="dropdown" :class="{ 'is-active': addAssociationAbilityNameActive}">
+                    <div class="dropdown-trigger">
+                        <div class="field">
+                            <label class="label">Ability</label>
+                            <div class="control">
+                                <input class="input" type="text" placeholder="Ability name"
+                                    x-model.debounce.1s="addAssociationAbilityName"
+                                    x-init="$watch('addAssociationAbilityName', (value) => addAssociationAbilityNameChange(value))">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                            <template x-for="value in filteredAbilities">
+                                <a class="dropdown-item" x-text="value.name"
+                                    @click="addAssociationAbilityNameSelect(value)"></a>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add association modal qradar rule selector -->
+                <div class="dropdown" :class="{ 'is-active': addAssociationRuleNameActive}">
+                    <div class="dropdown-trigger">
+                        <div class="field">
+                            <label class="label">QRadar Rule</label>
+                            <div class="control">
+                                <input class="input" type="text" placeholder="Rule name"
+                                    x-model.debounce.1s="addAssociationRuleName"
+                                    x-init="$watch('addAssociationRuleName', (value) => addAssociationRuleNameChange(value))">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-content">
+                            <template x-for="value in qradarRules">
+                                <a class="dropdown-item" x-text="value.name"
+                                    @click="addAssociationRuleNameSelect(value)"></a>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <br><br><br><br><br><br>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success">Save</button>
+                <button class="button" @click="showAddAssociationModal = false">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+
+
+    <div class="modal" :class="{ 'is-active': showRulesVerifiedModal}">
+        <div class="modal-background" @click="showRulesVerifiedModal = false"></div>
+        <div class="modal-card wide">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Rules verified</p>
+            </header>
+            <section class="modal-card-body">
+                <div class="container"> 
+
+                    <div class="mb-5"> Attack running : <span x-text="attackRunning"></span></div>
+
+                    <div class="columns is-flex-direction-row has-background-primary-light is-fullwidth"> 
+                        <div class="column p-2 Black">  Abitilities 
+                        </div> 
+                        <div class="column p-2 Black"> Qradar rules
+                        </div> 
+                        <div class="column p-2 Black"> Verified
+                        </div> 
+                    </div>
+                    
+            
+                    <template x-for="elt in listAbilitiesRulesVerified">
+            
+                        <div class="columns is-flex-direction-row has-background-primary-light is-fullwidth"> 
+                            <div class="column p-2 Black" x-text="elt.ability.name"  >   
+                            </div> 
+                            <div class="column p-2 Black" x-text="elt.qradar.name" >
+                            </div> 
+
+                            <div class="column p-2 Black">OK
+                            </div> 
+                        </div> 
+                    </template>
+            
+                </div> 
+
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" @click="refreshRulesVerified()">Refresh</button>
+                <button class="button" @click="showRulesVerifiedModal = false">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="container"> 
+
+        <div class="columns is-flex-direction-row has-background-primary-light is-fullwidth"> 
+            <div class="column p-2 Black">  Abitilities 
+            </div> 
+            <div class="column p-2 Black"> Qradar rules
+            </div> 
+        </div>
+        
+
+        <template x-for="elt in listAbilitiesRules">
+
+            <div class="columns is-flex-direction-row has-background-primary-light is-fullwidth"> 
+                <div class="column p-2 Black" x-text="elt.ability.name"  >   
+                </div> 
+                <div class="column p-2 Black" x-text="elt.qradar.name" >
+                </div> 
+            </div> 
+        </template>
+
+    </div> 
+
+</div>
+
+
+
+<script>
+    /*
+      Templates in CALDERA are now enhanced with Alpine.js! It's essentially
+      a replacement for jQuery that has similar features to Vue and React.
+      Read up on the docs before you get started working on the UI: https://alpinejs.dev/
+    */
+
+    function alpineBastiodon() {
+        return {
+            name: '{{ name }}',
+            description: '{{ description }}',
+
+            abilities: [],
+
+            // Add association modal
+            showAddAssociationModal: false,
+
+            filteredAbilities: [],
+            addAssociationAbilityName: '',
+            addAssociationAbilityNameActive: false,
+            addAssociationAbilitySelected: null,
+            addAssociationAbilityNameSelected: false, // Prevents the dropdown from opening after selecting an item
+
+            qradarRules: [],
+            addAssociationRuleName: '',
+            addAssociationRuleNameActive: false,
+            addAssociationRuleSelected: null,
+            addAssociationRuleNameSelected: false, // Prevents the dropdown from opening after selecting an item
+
+            showRulesVerifiedModal: false,
+
+            listAbilitiesRules: [{"qradar":{"id":3,"name":"ping admin-intranet"},"ability":{"id":"30","name":"Ping from admin to intranet network"}},{"qradar":{"id":100404,"name":"Ssh user to intranet"},"ability":{"id":"30","name":"Ssh user to intranet"}}],
+
+            listAbilitiesRulesVerified: [],
+
+            attackRunning: false,
+
+            initPage() {
+                apiV2('GET', 'api/v2/abilities').then(async (abilities) => {
+                    this.abilities = abilities;
+                    console.log(abilities);
+                }).catch((error) => {
+                    toast('Error loading page', false);
+                    console.error(error);
+                })
+            },
+
+            startVerification() {
+                let body = {
+                    "timeout": 120
+                };
+                apiV2('POST', 'plugin/bastiodon/attack', body, true).then(async () => {
+                    toast('Verification started', false);
+                    console.log('verification started');
+                }).catch((error) => {
+                    toast('Error starting verification', false);
+                    console.error(error);
+                })
+            },
+
+            addAssociationAbilityNameChange(value) {
+                console.log(value);
+                if (this.addAssociationAbilityNameSelected) {
+                    this.addAssociationAbilityNameSelected = false;
+                    return;
+                }
+                var filteredAbilities = this.abilities.filter(ability => {
+                    return ability.name.toLowerCase().includes(value.toLowerCase());
+                });
+                this.filteredAbilities.length = 0;
+                filteredAbilities.forEach(element => {
+                    this.filteredAbilities.push({
+                        id: element.ability_id,
+                        name: element.name
+                    });
+                });
+                if (filteredAbilities.length > 0) {
+                    this.addAssociationAbilityNameActive = true;
+                } else {
+                    this.addAssociationAbilityNameActive = false;
+                }
+            },
+
+
+            addAssociationAbilityNameSelect(value) {
+                this.addAssociationAbilityName = value.name;
+                this.addAssociationAbilitySelected = value;
+                this.addAssociationAbilityNameActive = false;
+                this.addAssociationAbilityNameSelected = true;
+            },
+
+            addAssociationRuleNameChange(value) {
+                console.log(value);
+                if (this.addAssociationRuleNameSelected) {
+                    this.addAssociationRuleNameSelected = false;
+                    return;
+                }
+                apiV2('GET', '/plugin/bastiodon/qradar/rules?name=' + value)
+                    .then(response => {
+                        this.qradarRules.length = 0;
+                        response.forEach(element => {
+                            this.qradarRules.push({
+                                id: element.id,
+                                name: element.name
+                            });
+                        });
+                        if (response.length > 0) {
+                            this.addAssociationRuleNameActive = true;
+                        } else {
+                            this.addAssociationRuleNameActive = false;
+                        }
+                    });
+            },
+
+            addAssociationRuleNameSelect(value) {
+                this.addAssociationRuleName = value.name;
+                this.addAssociationRuleSelected = value;
+                this.addAssociationRuleNameActive = false;
+                this.addAssociationRuleNameSelected = true;
+            },
+
+            startVerification() {
+                let body = {
+                    "timeout": 120
+                };
+                apiV2('POST', 'plugin/bastiodon/attack', body, true).then(async () => {
+                    toast('Verification started', false);
+                    console.log('verification started');
+                }).catch((error) => {
+                    toast('Error starting verification', false);
+                    console.error(error);
+                })
+            },
+
+
+            refreshRulesVerified(){
+                //this.listAbilitiesRulesVerified = [{"qradar":{"id":4,"name":"oki"},"ability":{"id":"30","name":"ftp-ability"}}];
+
+                apiV2('GET', '/plugin/bastiodon/attack')
+                    .then(async (response)  => {
+                        this.listAbilitiesRulesVerified = response.verified_associations;
+                        this.attackRunning = response.running;
+                        console.log(response);
+                });
+            }
+        };
+    }
+
+    // # sourceURL=bastiodon.js
+</script>
